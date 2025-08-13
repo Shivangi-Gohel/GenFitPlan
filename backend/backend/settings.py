@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-zmzl8_w+tn+$jfc0(^3^yp=onn+kbado$nh&g!*!*nfvlo^1s!
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['*']
 
 
 
@@ -79,12 +79,17 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+DATABASES = {}
+
+from mongoengine import connect
+import os
+connect(
+    db=os.getenv("MONGO_DB"),
+    host=os.getenv("MONGO_URI"),
+)
+
+from dotenv import load_dotenv
+load_dotenv()
 
 
 # Password validation
@@ -127,3 +132,18 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# LOGGING = {
+#     'version': 1,
+#     'handlers': {
+#         'console': {
+#             'class': 'logging.StreamHandler',
+#         },
+#     },
+#     'root': {
+#         'handlers': ['console'],
+#         'level': 'INFO',
+#     },
+# }
+
+VAPI_SECRET_TOKEN = 'dhsghfdgshjhagsudaba'

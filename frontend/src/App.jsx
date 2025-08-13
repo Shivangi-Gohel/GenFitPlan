@@ -1,6 +1,5 @@
 // src/App.js
 import React, { useEffect, useState } from "react";
-import Home from "./components/Home";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import GenerateProgram from "./components/GenerateProgram";
 import Profile from "./components/Profile";
@@ -15,15 +14,24 @@ import {
 import SignInPage from "./pages/SignInPage";
 import SignUpPage from "./pages/SignUpPage";
 import ProtectedRoute from "./components/ProtectedRoutes";
+import Layout from "./components/Layout";
+import Home from "./components/Home";
+import WeightProgressChart from "./components/WeightProgressChart";
+import DailyWorkoutTracker from "./components/DailyWorkoutTracker";
+// import Ex from "./components/Ex";
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: (
-      <ProtectedRoute>
+      // <ProtectedRoute>
         <Home />
-      </ProtectedRoute>
+      // </ProtectedRoute>
     ),
+  },
+  {
+    path: "/layout",
+    element: <Layout />,
   },
   {
     path: "/generate-program",
@@ -42,11 +50,11 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/sign-in",
+    path: "/sign-in/*",
     element: <SignInPage />,
   },
   {
-    path: "/sign-up",
+    path: "/sign-up/*",
     element: <SignUpPage />,
   },
   {
@@ -57,19 +65,35 @@ const router = createBrowserRouter([
       </ClerkLoaded>
     ) 
   },
+  {
+    path: "/weight",
+    element: (
+      <ProtectedRoute>
+        <WeightProgressChart />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/track",
+    element: (
+      <ProtectedRoute>
+        <DailyWorkoutTracker/>
+      </ProtectedRoute>
+    ),
+  }
 ]);
 
 function App() {
   return (
     <>
-      <header>
+      {/* <header>
         <SignedIn>
           <UserButton />
         </SignedIn>
         <SignedOut>
           <SignInButton />
         </SignedOut>
-      </header>
+      </header> */}
 
       <main>
         <RouterProvider router={router} />

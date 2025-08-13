@@ -12,6 +12,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "concurrently": "^9.2.0"
+    "concurrently": "^9.2.0",
+    "svix": "^1.69.0"
   }
 }
