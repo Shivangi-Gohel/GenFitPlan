@@ -1,100 +1,117 @@
 // src/App.js
 import React, { useEffect, useState } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import GenerateProgram from "./components/GenerateProgram";
-import Profile from "./components/Profile";
+import GenerateProgram from "./pages/GenerateProgram";
+import Profile from "./pages/Profile";
 import {
   ClerkLoaded,
   RedirectToSignIn,
-  SignedIn,
-  SignedOut,
-  SignInButton,
-  UserButton,
 } from "@clerk/clerk-react";
 import SignInPage from "./pages/SignInPage";
 import SignUpPage from "./pages/SignUpPage";
 import ProtectedRoute from "./components/ProtectedRoutes";
 import Layout from "./components/Layout";
-import Home from "./components/Home";
-import WeightProgressChart from "./components/WeightProgressChart";
-import DailyWorkoutTracker from "./components/DailyWorkoutTracker";
-// import Ex from "./components/Ex";
+import Home from "./pages/Home";
+import WorkoutHistory from "./pages/WorkoutHistory";
+import YouTubeSearch from "./pages/YouTubeSearch";
+import AIChatAssistant from "./pages/AIChatAssistant";
+import ScrollToTop from "./components/ScrollToTop";
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: (
-      // <ProtectedRoute>
-        <Home />
-      // </ProtectedRoute>
+      <>
+      <ScrollToTop />
+      <Home />
+      </>
     ),
   },
   {
     path: "/layout",
-    element: <Layout />,
+    element: (
+      <>
+        <ScrollToTop />
+        <Layout />
+      </>
+    ),
   },
   {
     path: "/generate-program",
     element: (
       <ProtectedRoute>
+        <ScrollToTop />
         <GenerateProgram />
       </ProtectedRoute>
     ),
   },
   {
-    path: "profile",
+    path: "/profile",
     element: (
       <ProtectedRoute>
+        <ScrollToTop />
         <Profile />
       </ProtectedRoute>
     ),
   },
   {
     path: "/sign-in/*",
-    element: <SignInPage />,
+    element: (
+      <>
+        <ScrollToTop />
+        <SignInPage />
+      </>
+    ),
   },
   {
     path: "/sign-up/*",
-    element: <SignUpPage />,
+    element: (
+      <>
+        <ScrollToTop />
+        <SignUpPage />
+      </>
+    ),
   },
   {
     path: "/sign-in/sso-callback",
     element: (
       <ClerkLoaded>
-          <RedirectToSignIn />
+        <RedirectToSignIn />
       </ClerkLoaded>
     ) 
   },
   {
-    path: "/weight",
+    path: "/workout-history",
     element: (
       <ProtectedRoute>
-        <WeightProgressChart />
+        <ScrollToTop />
+        <WorkoutHistory />
       </ProtectedRoute>
     ),
   },
   {
-    path: "/track",
+    path: "/youtube-search",
     element: (
       <ProtectedRoute>
-        <DailyWorkoutTracker/>
+        <ScrollToTop />
+        <YouTubeSearch />
       </ProtectedRoute>
     ),
+  },
+  {
+    path: "/chatbot",
+    element: (
+      <ProtectedRoute>
+        <ScrollToTop />
+        <AIChatAssistant />
+      </ProtectedRoute>
+    )
   }
 ]);
 
 function App() {
   return (
     <>
-      {/* <header>
-        <SignedIn>
-          <UserButton />
-        </SignedIn>
-        <SignedOut>
-          <SignInButton />
-        </SignedOut>
-      </header> */}
-
       <main>
         <RouterProvider router={router} />
       </main>

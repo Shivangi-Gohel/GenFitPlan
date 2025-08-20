@@ -17,9 +17,7 @@ const UserPrograms = () => {
   return (
     <div className="w-full pb-24 pt-16 relative">
       <div className="container mx-auto max-w-6xl px-4">
-        {/* HEADER- PROGRAM GALLERY */}
         <div className="bg-card/90 backdrop-blur-sm border border-border rounded-lg overflow-hidden mb-16">
-          {/* HEADER BAR */}
           <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-background/70">
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-primary"></div>
@@ -28,7 +26,6 @@ const UserPrograms = () => {
             <div className="text-sm text-muted-foreground">Featured Plans</div>
           </div>
 
-          {/* HEADER CONTENT */}
           <div className="p-8 text-center">
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
               <span className="text-foreground">AI-Generated </span>
@@ -39,7 +36,6 @@ const UserPrograms = () => {
               Explore personalized fitness plans our AI assistant has created for other users
             </p>
 
-            {/* STATS */}
             <div className="flex items-center justify-center gap-16 mt-10 font-mono">
               <div className="flex flex-col items-center">
                 <p className="text-3xl text-primary">500+</p>
@@ -65,14 +61,12 @@ const UserPrograms = () => {
           </div>
         </div>
 
-        {/* Program cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {USER_PROGRAMS.map((program) => (
             <Card
               key={program.id}
               className="bg-card/90 backdrop-blur-sm border border-border hover:border-primary/50 transition-colors overflow-hidden"
             >
-              {/* Card header with user info */}
               <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-background/70">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-primary"></div>
@@ -117,7 +111,6 @@ const UserPrograms = () => {
               </CardHeader>
 
               <CardContent className="px-5">
-                {/* Program details */}
                 <div className="space-y-5 pt-2">
                   <div className="flex items-start gap-3">
                     <div className="p-2 rounded-md bg-primary/10 text-primary mt-0.5">
@@ -164,7 +157,6 @@ const UserPrograms = () => {
                   </div>
                 </div>
 
-                {/* Program description */}
                 <div className="mt-5 pt-5 border-t border-border">
                   <div className="text-sm text-muted-foreground">
                     <span className="text-primary">&gt; </span>
@@ -174,7 +166,7 @@ const UserPrograms = () => {
               </CardContent>
 
               <CardFooter className="px-5 py-4 border-t border-border">
-                <div onClick={()=>navigate(`/programs/${program.id}`)} className="w-full">
+                <div className="w-full">
                   <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
                     View Program Details
                     <ChevronRight className="ml-2 h-4 w-4" />
@@ -185,7 +177,6 @@ const UserPrograms = () => {
           ))}
         </div>
 
-        {/* CTA section */}
         <div className="mt-16 text-center">
           <div onClick={()=>navigate("/generate-program")}>
             <Button

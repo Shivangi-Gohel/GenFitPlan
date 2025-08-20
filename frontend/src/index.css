@@ -207,6 +207,14 @@
   animation: slow-spin 12s linear infinite;
 }
 
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE & Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
 @keyframes sound-wave {
   0% {
     height: 10%;

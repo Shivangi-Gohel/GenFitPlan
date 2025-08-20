@@ -7,12 +7,13 @@ from django.http import JsonResponse
 import google.generativeai as genai
 from pymongo import MongoClient
 from datetime import datetime
-import os, json
+import os, json, requests, re
 from dotenv import load_dotenv
 from .models import Plan
 from .serializers import PlanSerializer
 from rest_framework import status
 from google.generativeai import GenerativeModel
+from dateutil import parser
 
 
 print("Starting views.py, about to connect to MongoDB...")
@@ -21,6 +22,7 @@ load_dotenv()
 
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 model = genai.GenerativeModel("gemini-1.5-flash")
+chat_model = genai.GenerativeModel("gemini-1.5-flash")
 
 # Mongo setup
 client = MongoClient(os.getenv("MONGO_URI"))
@@ -28,6 +30,9 @@ db = client["GenFitPlan"]
 users_collection = db["users"]
 collection = db["vapi_sessions"]
 plans_collection = db["plans"]
+log_collection = db["workout_log"]
+
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 
 try:
     client.server_info()
@@ -54,49 +59,6 @@ def get_active_plans(request):
 
 
 @csrf_exempt
-def generate(request):
-    if request.method == "POST":
-        try:
-            print("Received request to generate diet plan..........................")
-            data = json.loads(request.body)
-
-            structured_data = data.get("structuredData", {})
-            print("Structured data received:", structured_data)
-            name = structured_data.get("name", "User")
-            age = structured_data.get("age")
-            weight = structured_data.get("weight")
-            height = structured_data.get("height")
-            goal = structured_data.get("fitness_goal", "general fitness")
-
-            # Simple logic for generating a dummy diet plan
-            response_text = (
-                f"Thanks {name}! Based on your age {age}, weight {weight}kg, "
-                f"height {height}cm, and goal of {goal}, here's your basic diet plan:\n"
-                f"- Eat high-protein meals\n"
-                f"- Include fruits and vegetables\n"
-                f"- Stay hydrated\n"
-                f"- Get 7-8 hours of sleep\n"
-                f"Good luck on your health journey!"
-            )
-
-            return JsonResponse({"messages": [{"type": "text", "text": response_text}]})
-        except Exception as e:
-            return JsonResponse(
-                {
-                    "messages": [
-                        {
-                            "type": "text",
-                            "text": f"Sorry, something went wrong: {str(e)}",
-                        }
-                    ]
-                },
-                status=500,
-            )
-
-    return JsonResponse({"error": "Invalid request method"}, status=405)
-
-
-@csrf_exempt
 def store_user(request):
     if request.method == "POST":
         try:
@@ -106,9 +68,11 @@ def store_user(request):
             image = data.get("image")
             created_at = data.get("created_at")
 
-            # Convert created_at string to datetime if needed
+            print("Received data:", data)
+            print("Clerk ID:", clerkId)
+            print("Email:", email)
             if created_at:
-                created_at = datetime.fromisoformat(created_at.rstrip("Z"))
+                created_at = parser.isoparse(created_at)
 
             user = {
                 "clerkId": clerkId,
@@ -176,16 +140,14 @@ def validate_diet_plan(plan):
 @api_view(["POST"])
 def generate_program(request):
     try:
-        user_id = request.data.get("userId")  # Coming from frontend
+        user_id = request.data.get("userId")
         if not user_id:
             return Response({"error": "userId is required"}, status=400)
 
-        # Fetch user data from MongoDB
         user_data = collection.find_one({"user": user_id}, {"_id": 0})
         if not user_data:
             return Response({"error": "No data found for this user"}, status=404)
 
-        # Extract values
         age = user_data.get("age")
         height = user_data.get("height")
         weight = user_data.get("weight")
@@ -330,44 +292,6 @@ def generate_program(request):
         )
 
 
-@api_view(["POST"])
-def create_plan(request):
-    try:
-        # Step 1: Extract arguments (equivalent to Convex `args`)
-        user_id = request.data.get("userId")
-        name = request.data.get("name")
-        workout_plan = request.data.get("workoutPlan")
-        diet_plan = request.data.get("dietPlan")
-        is_active = request.data.get("isActive", True)
-
-        # Step 2: Get user object (Convex assumes the user exists)
-        user = User.objects.get(id=user_id)
-
-        # Step 3: Find all active plans for this user and deactivate them
-        active_plans = Plan.objects.filter(user=user, is_active=True)
-        for plan in active_plans:
-            plan.is_active = False
-            plan.save()
-
-        # Step 4: Insert the new plan (same as `ctx.db.insert`)
-        new_plan = Plan.objects.create(
-            user=user,
-            name=name,
-            workout_plan=workout_plan,
-            diet_plan=diet_plan,
-            is_active=is_active,
-        )
-
-        # Step 5: Return new plan ID
-        return Response({"planId": new_plan.id}, status=status.HTTP_201_CREATED)
-
-    except User.DoesNotExist:
-        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
 @api_view(["GET"])
 def get_user_plans(request, user_id):
     try:
@@ -383,11 +307,6 @@ def get_user_plans(request, user_id):
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@api_view(["GET"])
-def hello(request):
-    return Response({"message": "Hello from Django!"})
-
-
 @api_view(["POST"])
 def store_data_from_vapi(request):
     try:
@@ -396,40 +315,38 @@ def store_data_from_vapi(request):
             return Response(
                 {"error": "No message found"}, status=status.HTTP_400_BAD_REQUEST
             )
+        print("Received message:", message)
 
         timestamp = message.get("timestamp")
         analysis = message.get("analysis", {})
         user = message.get("assistant", {}).get("variableValues").get("user_id")
 
-        print("Received user:", user)
-        print("...", message.get("assistant", {}))
-
-        # Extract conversation messages array
         artifact_messages = message.get("artifact", {}).get("messages", [])
         if not artifact_messages:
             return Response(
                 {"message": "No conversation messages found"}, status=status.HTTP_200_OK
             )
+            
+        structured_data = analysis.get("structuredData")
 
         # Get the last bot message
         last_msg = artifact_messages[-1]
         if (
-            last_msg.get("role") != "bot"
-            or "goodbye" not in last_msg.get("message", "").lower()
+            # last_msg.get("role") != "bot"
+            "goodbye" not in last_msg.get("message", "").lower()
+            or "great day" not in last_msg.get("message", "").lower()
         ):
             return Response(
                 {"message": "No goodbye detected yet"}, status=status.HTTP_200_OK
             )
 
-        # Require structuredData
-        structured_data = analysis.get("structuredData")
         if not structured_data:
             return Response(
                 {"message": "Goodbye detected but no structuredData present"},
                 status=status.HTTP_200_OK,
             )
 
-        # Only keep required fields
+        print("age,   ", structured_data.get("age"))
         required_fields = [
             "age",
             "height",
@@ -440,27 +357,29 @@ def store_data_from_vapi(request):
             "fitness_level",
             "dietary_restrictions",
         ]
+        
         filtered_data = {field: structured_data.get(field) for field in required_fields}
 
         print("Filtered Structured Data:", filtered_data)
+        existing_session = collection.find_one({"user": user})
 
-        # Store or update in DB
-        existing_session = collection.find_one({"timestamp": timestamp})
         if existing_session:
+            # Update user’s latest info
             collection.update_one(
                 {"_id": existing_session["_id"]},
-                {"$set": {"user": user, **filtered_data}},
+                {"$set": {"timestamp": timestamp, **filtered_data}},
             )
             return Response(
-                {"message": "Data updated with filtered structuredData after goodbye"},
+                {"message": "User data updated after goodbye"},
                 status=status.HTTP_200_OK,
             )
         else:
+            # Insert new user record
             collection.insert_one(
                 {"user": user, "timestamp": timestamp, **filtered_data}
             )
             return Response(
-                {"message": "Initial filtered data stored after goodbye"},
+                {"message": "New user data stored after goodbye"},
                 status=status.HTTP_201_CREATED,
             )
 
@@ -484,18 +403,115 @@ def get_user_details(request, user_id):
 
         traceback.print_exc()
         return Response({"error": str(e)}, status=500)
-    
-    
-@api_view(["POST"])
-def workout_log(request):
-    user_id = request.data.get("userId")
-    date = request.data.get("date")
-    completed = request.data.get("completedExercises", [])
-    
-    collection.update_one(
-        {"user": user_id, "date": date},
-        {"$set": {"completedExercises": completed}},
-        upsert=True
-    )
-    return Response({"success": True, "message": "Workout logged"})
 
+
+@api_view(["GET", "POST"])
+def workout_log(request):
+    if request.method == "POST":
+        user_id = request.data.get("userId")
+        date = request.data.get("date")
+        completed = request.data.get("completedExercises", [])
+
+        log_collection.update_one(
+            {"user": user_id, "date": date},
+            {"$set": {"completedExercises": completed}},
+            upsert=True,
+        )
+        return Response({"success": True, "message": "Workout logged"})
+
+    elif request.method == "GET":
+        user_id = request.query_params.get("userId")
+        logs = list(log_collection.find({"user": user_id}, {"_id": 0}))
+        return Response(logs)
+
+
+BASE_URL = "https://www.googleapis.com/youtube/v3/search"
+
+
+def search_youtube_videos(query, max_results):
+    """
+    Search YouTube videos using YouTube Data API v3
+    """
+    params = {
+        "part": "snippet",
+        "q": query,
+        "type": "video",
+        "maxResults": max_results,
+        "key": YOUTUBE_API_KEY,
+    }
+
+    if not YOUTUBE_API_KEY:
+        raise ValueError("YouTube API key is not set in environment variables.")
+
+    response = requests.get(BASE_URL, params=params)
+    data = response.json()
+
+    videos = []
+    for item in data.get("items", []):
+        video_id = item["id"]["videoId"]
+        title = item["snippet"]["title"]
+        thumbnail = item["snippet"]["thumbnails"]["high"]["url"]
+        channel = item["snippet"]["channelTitle"]
+        url = f"https://www.youtube.com/watch?v={video_id}"
+
+        videos.append(
+            {"title": title, "channel": channel, "thumbnail": thumbnail, "url": url}
+        )
+
+    return videos
+
+
+@api_view(["GET"])
+def get_videos(request):
+    query = request.GET.get("query", "")
+    if not query:
+        return Response({"error": "Missing query"}, status=400)
+
+    if not YOUTUBE_API_KEY:
+        return Response({"error": "API key not set"}, status=500)
+
+    try:
+        videos = search_youtube_videos(query, 10)
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
+
+    return Response(videos)
+
+
+@api_view(["POST"])
+def fitness_chatbot(request):
+    try:
+        body = json.loads(request.body.decode("utf-8"))
+        user_message = body.get("message", "")
+
+        if not user_message:
+            return JsonResponse({"error": "No message provided"}, status=400)
+        print("User message:", user_message)
+
+        prompt = f"""
+            You are a professional fitness and diet assistant. 
+            - Only answer questions related to workouts, exercises, diet, nutrition, and motivation. 
+            - Keep answers short, clear, and actionable. 
+            - Provide workout/diet suggestions in bullet points or short steps.
+            - If mood-based (e.g., "I feel tired"), suggest light/stretching workouts.
+            - If form-related, give clear correction tips.
+            - If unrelated, say: "I can only help with fitness, workouts, and diet."
+            
+            User: {user_message}
+            Assistant:
+            """
+
+        response = chat_model.generate_content(prompt)
+
+        if isinstance(response, str):
+            reply = response
+        elif hasattr(response, "text"):
+            reply = response.text
+        else:
+            reply = str(response)
+
+        final_reply = re.sub(r"(\*{1,2})", "", reply).strip()
+
+        return JsonResponse({"reply": final_reply})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)

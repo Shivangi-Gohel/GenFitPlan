@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 
 export default function DailyWorkoutTracker({ userId, workoutPlan }) {
-  const today = new Date().toISOString().split("T")[0]; // e.g. "2025-08-13"
+  const today = new Date().toISOString().split("T")[0]; 
   const [completed, setCompleted] = useState([]);
 
   const toggleExercise = (exercise) => {
