@@ -28,20 +28,26 @@ export default function Profile() {
     weekday: "long",
   });
 
-  // Fetch AI-generated plan
   useEffect(() => {
-    fetch("http://localhost:8000/api/generate-program/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: user.id }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setDietPlan(data.data.dietPlan);
-        setWorkoutPlan(data.data.workoutPlan);
+    async function fetchPlans() {
+      try {
+        const res = await fetch(`http://localhost:8000/api/plans/${user.id}/`);
+        console.log("response status:", res);
+
+        const data = await res.json();
+        setWorkoutPlan(data?.workoutPlan);
+        setDietPlan(data?.dietPlan);
+      } catch (err) {
+        console.log("Error fetching plans:", err);
+      } finally {
         setLoading(false);
-      });
-  }, [user.id]);
+      }
+    }
+
+    if (user?.id) {
+      fetchPlans();
+    }
+  }, [user?.id]);
 
   const toggleExercise = (exercise) => {
     setCompleted((prev) => {

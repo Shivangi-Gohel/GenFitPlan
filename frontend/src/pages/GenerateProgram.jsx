@@ -75,24 +75,11 @@ const GenerateProgram = () => {
       setIsSpeaking(true);
     };
 
+    
     const handleSpeechEnd = (event) => {
       console.log("AI stopped Speaking");
       const data = event?.structuredData;
       console.log("Structured Data:", data);
-
-      if (data && data.age && data.height && data.fitness_goal) {
-        console.log("Collected Structured Data:", data);
-
-        fetch("http://localhost:8000/api/generate-program/", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(data),
-        });
-      } else {
-        console.warn("Structured data incomplete or missing:", data);
-      }
       setIsSpeaking(false);
     };
     const handleMessage = (msg) => {
@@ -292,7 +279,7 @@ const GenerateProgram = () => {
           {messages.length > 0 && (
             <div
               ref={messageContainerRef}
-              className="w-full bg-card/90 backdrop-blur-sm border border-border rounded-xl p-4 mb-8 h-64 overflow-y-auto transition-all duration-300 scroll-smooth"
+              className="w-full bg-card/90 backdrop-blur-sm border border-border rounded-xl p-4 mb-8 h-64 overflow-y-auto transition-all duration-300 scroll-smooth scrollbar-hide"
             >
               <div className="space-y-3">
                 {messages.map((msg, index) => (

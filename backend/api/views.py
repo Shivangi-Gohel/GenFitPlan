@@ -9,8 +9,6 @@ from pymongo import MongoClient
 from datetime import datetime
 import os, json, requests, re
 from dotenv import load_dotenv
-from .models import Plan
-from .serializers import PlanSerializer
 from rest_framework import status
 from google.generativeai import GenerativeModel
 from dateutil import parser
@@ -68,9 +66,6 @@ def store_user(request):
             image = data.get("image")
             created_at = data.get("created_at")
 
-            print("Received data:", data)
-            print("Clerk ID:", clerkId)
-            print("Email:", email)
             if created_at:
                 created_at = parser.isoparse(created_at)
 
@@ -140,6 +135,7 @@ def validate_diet_plan(plan):
 @api_view(["POST"])
 def generate_program(request):
     try:
+        print("generate program request data:", request.data)
         user_id = request.data.get("userId")
         if not user_id:
             return Response({"error": "userId is required"}, status=400)
@@ -292,30 +288,58 @@ def generate_program(request):
         )
 
 
+# @api_view(["GET"])
+# def get_user_plans(request, user_id):
+#     try:
+#         user = User.objects.get(clerkId=user_id)
+#         plans = Plan.objects.filter(user=user).order_by("-created_at")
+#         serializer = PlanSerializer(plans, many=True)
+#         print("user:", user)
+#         print("plans:", plans)
+#         print("serializer data:", serializer.data)
+#         return Response(serializer.data, status=status.HTTP_200_OK)
+
+#     except User.DoesNotExist:
+#         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+#     except Exception as e:
+#         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 @api_view(["GET"])
 def get_user_plans(request, user_id):
     try:
-        user = User.objects.get(id=user_id)
-        plans = Plan.objects.filter(user=user).order_by("-created_at")
-        serializer = PlanSerializer(plans, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        # Check if user exists
+        user = users_collection.find_one({"clerkId": user_id})
+        if not user:
+            return Response({"error": "User not found"}, status=404)
 
-    except User.DoesNotExist:
-        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        # Find single plan for the user
+        plan = plans_collection.find_one({"user": user_id})
+
+        if not plan:
+            return Response({"message": "No plan found"}, status=404)
+
+        # Convert ObjectId and datetime
+        plan["_id"] = str(plan["_id"])
+        if "created_at" in plan:
+            plan["created_at"] = str(plan["created_at"])
+
+        return Response(plan, status=200)
 
     except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({"error": str(e)}, status=500)
 
 
 @api_view(["POST"])
 def store_data_from_vapi(request):
     try:
+        print("Storing data from VAPI...")
         message = request.data.get("message", {})
         if not message:
             return Response(
                 {"error": "No message found"}, status=status.HTTP_400_BAD_REQUEST
             )
-        print("Received message:", message)
 
         timestamp = message.get("timestamp")
         analysis = message.get("analysis", {})
@@ -326,8 +350,9 @@ def store_data_from_vapi(request):
             return Response(
                 {"message": "No conversation messages found"}, status=status.HTTP_200_OK
             )
-            
+
         structured_data = analysis.get("structuredData")
+        print("Structured data:", structured_data)
 
         # Get the last bot message
         last_msg = artifact_messages[-1]
@@ -346,7 +371,6 @@ def store_data_from_vapi(request):
                 status=status.HTTP_200_OK,
             )
 
-        print("age,   ", structured_data.get("age"))
         required_fields = [
             "age",
             "height",
@@ -357,10 +381,9 @@ def store_data_from_vapi(request):
             "fitness_level",
             "dietary_restrictions",
         ]
-        
+
         filtered_data = {field: structured_data.get(field) for field in required_fields}
 
-        print("Filtered Structured Data:", filtered_data)
         existing_session = collection.find_one({"user": user})
 
         if existing_session:
@@ -368,6 +391,10 @@ def store_data_from_vapi(request):
             collection.update_one(
                 {"_id": existing_session["_id"]},
                 {"$set": {"timestamp": timestamp, **filtered_data}},
+            )
+
+            requests.post(
+                "http://localhost:8000/api/generate-program/", json={"userId": user}
             )
             return Response(
                 {"message": "User data updated after goodbye"},
@@ -377,6 +404,10 @@ def store_data_from_vapi(request):
             # Insert new user record
             collection.insert_one(
                 {"user": user, "timestamp": timestamp, **filtered_data}
+            )
+
+            requests.post(
+                "http://localhost:8000/api/generate-program/", json={"userId": user}
             )
             return Response(
                 {"message": "New user data stored after goodbye"},
@@ -390,8 +421,6 @@ def store_data_from_vapi(request):
 @api_view(["GET"])
 def get_user_details(request, user_id):
     try:
-        print("Collection:", collection)
-        print("User ID:", user_id)
 
         doc = collection.find_one({"user": user_id}, {"_id": 0})
         if not doc:
@@ -486,7 +515,6 @@ def fitness_chatbot(request):
 
         if not user_message:
             return JsonResponse({"error": "No message provided"}, status=400)
-        print("User message:", user_message)
 
         prompt = f"""
             You are a professional fitness and diet assistant. 
