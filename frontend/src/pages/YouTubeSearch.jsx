@@ -5,6 +5,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import Layout from "../components/Layout";
 import { useSearchParams } from "react-router-dom";
+import { URL } from "../../constant";
 
 export default function YouTubeSearch() {
   const [query, setQuery] = useState("");
@@ -20,7 +21,7 @@ export default function YouTubeSearch() {
     setIsLoading(true);
     try {
       const res = await fetch(
-        `http://localhost:8000/api/videos?query=${encodeURIComponent(query)}`
+        `${URL}/videos?query=${encodeURIComponent(query)}`
       );
       const data = await res.json();
       setVideos(data);
@@ -83,7 +84,7 @@ export default function YouTubeSearch() {
                   />
                 </div>
                 <Button
-                  onClick={handleSearch}
+                  onClick={() => handleSearch(query)}
                   disabled={!query || isLoading}
                   className="h-12 px-6"
                 >

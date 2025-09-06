@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { URL } from "../../constant";
 
 export default function DailyWorkoutTracker({ userId, workoutPlan }) {
   const today = new Date().toISOString().split("T")[0]; 
@@ -18,7 +19,7 @@ export default function DailyWorkoutTracker({ userId, workoutPlan }) {
 
   const saveWorkoutLog = async () => {
     try {
-      const res = await axios.post("/api/workout-log", {
+      const res = await axios.post(`${URL}/api/workout-log`, {
         userId,
         date: today,
         completedExercises: completed,

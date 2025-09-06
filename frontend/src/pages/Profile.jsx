@@ -13,6 +13,7 @@ import {
 import Layout from "../components/Layout";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { URL } from "../../constant";
 
 export default function Profile() {
   const { user } = useUser();
@@ -31,7 +32,7 @@ export default function Profile() {
   useEffect(() => {
     async function fetchPlans() {
       try {
-        const res = await fetch(`http://localhost:8000/api/plans/${user.id}/`);
+        const res = await fetch(`${URL}/plans/${user.id}/`);
         console.log("response status:", res);
 
         const data = await res.json();

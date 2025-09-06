@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { vapi } from "../components/vapi";
 import Layout from "../components/Layout";
+import { URL } from "../../constant";
 
 const GenerateProgram = () => {
   const [callActive, setCallActive] = useState(false);
@@ -94,7 +95,7 @@ const GenerateProgram = () => {
         const structuredData = msg?.analysis?.structuredData;
         printf("Structured Data on Goodbye:", structuredData);
         if (structuredData && Object.keys(structuredData).length > 0) {
-          fetch("http://localhost:8000/api/vapi/store-data", {
+          fetch(`${URL}/vapi/store-data`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ message: msg }),

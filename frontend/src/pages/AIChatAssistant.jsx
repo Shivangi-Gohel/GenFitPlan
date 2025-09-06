@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback } from "../components/ui/avatar";
 import { Send, Bot, User, Loader2 } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import Layout from "../components/Layout";
+import { URL } from "../../constant";
 
 const AIChatAssistant = () => {
   const [messages, setMessages] = useState([
@@ -27,7 +28,7 @@ const AIChatAssistant = () => {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8000/api/fitness-chat/", {
+      const res = await fetch(`${URL}/fitness-chat/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

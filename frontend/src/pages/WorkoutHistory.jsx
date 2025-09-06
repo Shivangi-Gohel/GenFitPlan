@@ -19,6 +19,7 @@ import {
   CardTitle,
 } from "../components/ui/card";
 import { Activity, Target, TrendingUp, Zap } from "lucide-react";
+import { URL } from "../../constant";
 
 export default function WorkoutDashboard() {
   const [logs, setLogs] = useState([]);
@@ -31,7 +32,7 @@ export default function WorkoutDashboard() {
     const fetchLogs = async () => {
       try {
         const res = await fetch(
-          `http://localhost:8000/api/workout-log/?userId=${userId}`
+          `${URL}/workout-log/?userId=${userId}`
         );
         const data = await res.json();
         setLogs(data);

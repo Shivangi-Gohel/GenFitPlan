@@ -3,6 +3,7 @@ import { useUser } from "@clerk/clerk-react";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 import { Toaster } from "sonner"
+import { URL } from "../../constant";
 
 const Layout = ({ children }) => {
   const { isSignedIn, user, isLoaded } = useUser();
@@ -12,7 +13,7 @@ const Layout = ({ children }) => {
 
     useEffect(() => {
       if (!isLoaded || !user) return; 
-      fetch("http://localhost:8000/api/store-user/", {
+      fetch(`${URL}/store-user/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
